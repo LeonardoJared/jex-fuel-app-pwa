@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JEX Fuel - Supervisor de Campo</title>
+    <!-- Enlace al archivo de estilos independiente -->
+    <link rel="stylesheet" href="styles_pwa.css">
+    <!-- Enlace al manifiesto de identidad PWA -->
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+    <div class="header">
+        <h2>Control de Combustible</h2>
+        <div style="color: #FF454B; font-size: 12px; font-weight: 700; margin-top: 4px; letter-spacing: 0.5px;">📋 PWA MÓVIL — CAMPO</div>
+    </div>
+
+    <!-- Indicador de Estado de Conexión de Red -->
+    <div id="connection-status" class="status-badge" style="margin-bottom: 15px;">
+        🟢 CONECTADO AL PLANTEL JEX
+    </div>
+
+    <!-- Sección 1: Datos Generales de Control -->
+    <p class="section-title">Datos Generales</p>
+    <div class="card">
+        <label>Fecha de Operación</label>
+        <input type="date" id="log_date">
+
+        <label>Guardia / Turno</label>
+        <select id="shift">
+            <option value="-">-- SELECCIONE TURNO --</option>
+            <option value="DIA">DIA</option>
+            <option value="NOCHE">NOCHE</option>
+        </select>
+
+        <label>Tipo de Combustible</label>
+        <select id="fuel_type">
+            <option value="DIESEL B5">DIESEL B5</option>
+        </select>
+
+        <label>Operador de Cisterna</label>
+        <select id="operator">
+            <option value="">Cargando operadores...</option>
+        </select>
+
+        <label>Cisterna (Placa de Unidad)</label>
+        <select id="truck">
+            <option value="">Cargando cisternas...</option>
+        </select>
+    </div>
+
+    <!-- Sección 2: Grilla Dinámica para Equipos Despachados -->
+    <p class="section-title">Equipos Despachados</p>
+    <div class="card">
+        <div id="equipments-container">
+            <!-- Las filas de la grilla transaccional se inyectarán de forma dinámica mediante JavaScript -->
+        </div>
+        <div style="overflow: hidden; margin-top: 10px;">
+            <button class="btn-secondary" onclick="agregarFila()">➕ AGREGAR FILA</button>
+        </div>
+    </div>
+
+    <!-- Sección 3: Notas e Incidencias en Plantel -->
+    <p class="section-title">Observaciones de Campo</p>
+    <div class="card">
+        <textarea id="remarks" rows="3" placeholder="Notas e incidencias en plantel..."></textarea>
+    </div>
+
+    <!-- Botón Principal de Envío de Datos -->
+    <button class="btn-primary" onclick="enviarReporte()">Enviar Reporte a Plataforma</button>
+    <script>
+        // 1. Registro automático del Service Worker JEX para soporte Offline
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('🚀 PWA: Service Worker registrado de forma exitosa.', reg))
+                    .catch(err => console.error('❌ PWA: Fallo al registrar el Service Worker.', err));
+            });
+        }
+
+        const BACKEND_URL = "http://localhost:8000";
+        const SUPERVISOR_ACTIVO = "SUP-01"; 
+
+        // ===========================================================================
+        // CONFIGURACIÓN DE INDEXEDDB (BASE DE DATOS LOCAL EN EL CELULAR)
+        // ===========================================================================
+        let dbLocal;
+
+        // Abrimos (o creamos) la base de datos local llamada "JEX_Local_DB"
+        const requestDB = indexedDB.open("JEX_Local_DB", 1);
+
+        requestDB.onupgradeneeded = function(event) {
+            const db = event.target.result;
+            // Creamos el almacén interno "despachos_pendientes" con un ID autoincremental
+            if (!db.objectStoreNames.contains("despachos_pendientes")) {
+                db.createObjectStore("despachos_pendientes", { keyPath: "id", autoIncrement: true });
+                console.log("IndexedDB: Almacén de despachos offline creado correctamente.");
+            }
+        };
+
+        requestDB.onsuccess = function(event) {
+            dbLocal = event.target.result;
+            console.log("IndexedDB: Conexión a la base de datos local establecida con éxito.");
+        };
+
+        requestDB.onerror = function(event) {
+            console.error("IndexedDB: Error al abrir la base de datos local:", event.target.error);
+        };
+
+        // Colocar la fecha de hoy por defecto al iniciar la aplicación
+        document.getElementById('log_date').value = new Date().toISOString().split('T')[0];
+
+                // ===========================================================================
+        // CARGA DE CATÁLOGOS Y GESTIÓN DE INTERFAZ DE RED
+        // ===========================================================================
+        async function cargarCatalogos() {
+            try {
+                const resOpe = await fetch(`${BACKEND_URL}/api/operators`);
+                const operadores = await resOpe.json();
+                const selectOpe = document.getElementById("operator");
+                selectOpe.innerHTML = '<option value="-">-- SELECCIONE OPERADOR --</option>';
+                operadores.forEach(o => { 
+                    selectOpe.innerHTML += `<option value="${o.id}">${o.name}</option>`; 
+                });
+
+                const resTru = await fetch(`${BACKEND_URL}/api/fuel-trucks`);
+                const cisternas = await resTru.json();
+                const selectTru = document.getElementById("truck");
+                selectTru.innerHTML = '<option value="-">-- SELECCIONE CISTERNA --</option>';
+                cisternas.forEach(t => { 
+                    selectTru.innerHTML += `<option value="${t.id}">${t.name}</option>`; 
+                });
+            } catch (error) {
+                marcarOffline();
+            }
+        }
+
+        function marcarOffline() {
+            const status = document.getElementById("connection-status");
+            status.innerHTML = "⚠️ MODO OFFLINE — LOS DATOS SE GUARDARÁN EN EL DISPOSITIVO";
+            status.style.borderColor = "#FF454B";
+            status.style.color = "#FF454B";
+        }
+
+        function agregarFila(name = "", code = "", qty = "") {
+            const container = document.getElementById("equipments-container");
+            const div = document.createElement("div");
+            div.className = "grid-row";
+            div.innerHTML = `
+                <input type="text" placeholder="Ej: Excavadora CAT" class="eq-name" value="${name}">
+                <input type="text" placeholder="Ej: EX-04" class="eq-code" value="${code}">
+                <input type="number" step="0.1" placeholder="Gln" class="eq-qty" value="${qty}">
+                <button class="btn-delete" onclick="this.parentElement.remove()">🗑️</button>
+            `;
+            container.appendChild(div);
+        }
+
+        // ===========================================================================
+        // FUNCIÓN MÁGICA: GUARDAR EN LA MEMORIA INTERNA SI NO HAY INTERNET
+        // ===========================================================================
+        function guardarDespachoOffline(payload) {
+            if (!dbLocal) {
+                alert("❌ Error crítico: La base de datos interna del celular no está inicializada.");
+                return;
+            }
+
+            // Abrimos una transacción de escritura en el almacén local
+            const transaction = dbLocal.transaction(["despachos_pendientes"], "readwrite");
+            const store = transaction.objectStore("despachos_pendientes");
+            
+            // Inyectamos el JSON del reporte en el disco duro del dispositivo
+            const request = store.add(payload);
+
+            request.onsuccess = function() {
+                alert("⚠️ ¡Sin señal de internet! El reporte se ha resguardado de forma segura en la memoria interna de tu dispositivo. Se enviará a la plataforma de forma automática cuando recuperes red.");
+                
+                // Limpiamos el formulario en pantalla para el siguiente despacho de campo
+                document.getElementById("equipments-container").innerHTML = "";
+                document.getElementById("remarks").value = "";
+                agregarFila();
+            };
+
+            request.onerror = function(event) {
+                console.error("IndexedDB: Fallo al almacenar reporte localmente:", event.target.error);
+                alert("❌ No se pudo guardar el reporte en el almacenamiento interno.");
+            };
+        }
+
+                // ===========================================================================
+        // ENVÍO TRANSACCIONAL AUTOMÁTICO (DECIDE ONLINE / OFFLINE)
+        // ===========================================================================
+        async function enviarReporte() {
+            const shift = document.getElementById("shift").value;
+            const operator_id = document.getElementById("operator").value;
+            const truck_id = document.getElementById("truck").value;
+            
+            if (shift === "-" || operator_id === "-" || truck_id === "-" || operator_id === "" || truck_id === "") {
+                alert("⚠️ Por favor, complete todos los campos generales obligatorios.");
+                return;
+            }
+
+            const rows = document.querySelectorAll(".grid-row");
+            const equipments = [];
+            
+            rows.forEach((row, index) => {
+                const name = row.querySelector(".eq-name").value.trim();
+                const code = row.querySelector(".eq-code").value.trim();
+                const qty = row.querySelector(".eq-qty").value;
+
+                if (name && code && qty > 0) {
+                    equipments.push({
+                        "item_number": index + 1,
+                        "equipment_name": name,
+                        "equipment_code": code,
+                        "quantity_gln": parseFloat(qty)
+                    });
+                }
+            });
+
+            if (equipments.length === 0) {
+                alert("⚠️ Debe registrar al menos un equipo con galonaje válido.");
+                return;
+            }
+
+            const payload = {
+                "log_date": document.getElementById("log_date").value,
+                "shift": shift,
+                "fuel_type": document.getElementById("fuel_type").value,
+                "supervisor_id": SUPERVISOR_ACTIVO,
+                "operator_id": operator_id,
+                "truck_id": truck_id,
+                "remarks": document.getElementById("remarks").value.trim(),
+                "equipments": equipments
+            };
+
+            try {
+                // Intentamos mandar el reporte al backend central de FastAPI
+                const response = await fetch(`${BACKEND_URL}/api/fuel-logsheet-complete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert("🚀 ¡Reporte enviado con éxito a la base de datos central JEX!");
+                    document.getElementById("equipments-container").innerHTML = "";
+                    document.getElementById("remarks").value = "";
+                    agregarFila();
+                } else {
+                    const err = await response.json();
+                    alert(`❌ Error en la base de datos: ${err.detail}`);
+                }
+            } catch (error) {
+                // SI EL PROCESO ANTERIOR FALLA POR FALTA DE RED, SE ACTIVA EL MODO RESPALDO
+                console.log("📡 Red caída detectada. Desviando reporte a IndexedDB...");
+                guardarDespachoOffline(payload);
+            }
+        }
+
+        // ===========================================================================
+        // SINCRONIZADOR EN SEGUNDO PLANO (SUBE LOS DATOS AL VOLVER EL INTERNET)
+        // ===========================================================================
+        async function sincronizarDespachosPendientes() {
+            if (!dbLocal) return;
+
+            const transaction = dbLocal.transaction(["despachos_pendientes"], "readonly");
+            const store = transaction.objectStore("despachos_pendientes");
+            const request = store.getAll(); // Extrae todos los reportes acumulados
+
+            request.onsuccess = async function(event) {
+                const registros = event.target.result;
+                if (registros.length === 0) return;
+
+                console.log(`📡 Sincronizador JEX: Detectados ${registros.length} reportes offline listos para subir.`);
+                
+                for (let registro of registros) {
+                    try {
+                        // Clonamos el objeto quitándole el ID auto-incremental interno de IndexedDB
+                        const { id, ...payloadParaAPI } = registro;
+
+                        const response = await fetch(`${BACKEND_URL}/api/fuel-logsheet-complete`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payloadParaAPI)
+                        });
+
+                        if (response.ok) {
+                            // Si FastAPI lo procesa con éxito, lo borramos de la memoria interna
+                            const deleteTx = dbLocal.transaction(["despachos_pendientes"], "readwrite");
+                            deleteTx.objectStore("despachos_pendientes").delete(id);
+                            console.log(`✅ Registro offline #${id} sincronizado y eliminado de la memoria móvil.`);
+                        }
+                    } catch (err) {
+                        console.error("📡 Sincronizador: El servidor sigue apagado o inalcanzable.");
+                        break; // Detiene el bucle si la red se cayó de nuevo
+                    }
+                }
+            };
+        }
+
+        // Oyentes automáticos del sistema operativo del celular para detectar internet
+        window.addEventListener("online", () => {
+            document.getElementById("connection-status").innerHTML = "🟢 CONECTADO AL PLANTEL JEX";
+            document.getElementById("connection-status").style.borderColor = "#475569";
+            document.getElementById("connection-status").style.color = "#94A3B8";
+            sincronizarDespachosPendientes(); // Intenta limpiar la memoria de inmediato
+        });
+
+        window.addEventListener("offline", marcarOffline);
+
+        // Inicialización al cargar el documento
+        window.addEventListener("DOMContentLoaded", () => {
+            cargarCatalogos();
+            agregarFila();
+            // Ejecución preventiva por si la app arrancó en una zona con señal
+            setTimeout(sincronizarDespachosPendientes, 2000); 
+        });
+    </script>
+</body>
+</html>

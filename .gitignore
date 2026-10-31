@@ -1,0 +1,20 @@
+# Bloquear archivos de compilación de Python (Caché basura)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Bloquear configuraciones locales del editor que no deben compartirse
+.vscode/
+
+# Bloquear herramientas locales de desarrollo y túneles
+ngrok.exe
+
+# Bloquear credenciales y variables de entorno de producción
+.env
+*.env
+
+# Bloquear entornos virtuales locales de Python
+.venv/
+venv/
+ENV/
