@@ -1,5 +1,6 @@
-const CACHE_NAME = 'jex-fuel-cache-v1';
+const CACHE_NAME = 'jex-fuel-cache-v1.1.0';
 const ASSETS_TO_CACHE = [
+    './',
     './index.html',
     './styles_pwa.css',
     './manifest.json',
@@ -7,43 +8,57 @@ const ASSETS_TO_CACHE = [
     './assets/logo_jex.ico'
 ];
 
-// 1. Evento de instalación: Guarda los archivos en el almacenamiento interno del dispositivo
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            console.log('SW: Archivos estáticos de JEX guardados en caché con éxito.');
-            return cache.addAll(ASSETS_TO_CACHE);
-        })
+            console.log('SW: Pre-cacheando App Shell de JEX Fuel...');
+            return Promise.allSettled(
+                ASSETS_TO_CACHE.map((url) => 
+                    cache.add(url).catch((err) => console.warn(`SW: No se pudo precachear ${url}:`, err))
+                )
+            );
+        }).then(() => self.skipWaiting())
     );
 });
 
-// 2. Evento de activación: Limpia cachés antiguas si actualizas la versión de la app
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== CACHE_NAME) {
-                        console.log('SW: Limpiando caché obsoleta.');
+                        console.log('SW: Eliminando caché obsoleta:', cache);
                         return caches.delete(cache);
                     }
                 })
             );
-        })
+        }).then(() => self.clients.claim())
     );
 });
 
-// 3. Interceptador de peticiones: Si el supervisor no tiene red, sirve los archivos locales guardados
 self.addEventListener('fetch', (event) => {
-    // Solo interceptamos recursos locales, no llamadas externas de la API de FastAPI
-    if (!event.request.url.startsWith(self.location.origin)) return;
+    const request = event.request;
+
+    if (request.method !== 'GET') {
+        return;
+    }
+
+    if (request.url.includes('/api/')) {
+        return;
+    }
 
     event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
+        caches.match(request).then((cachedResponse) => {
             if (cachedResponse) {
+
+                fetch(request).then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
+                    }
+                }).catch(() => {});
                 return cachedResponse;
             }
-            return fetch(event.request);
+            return fetch(request);
         })
     );
 });

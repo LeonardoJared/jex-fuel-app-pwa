@@ -1,8 +1,14 @@
 {
   "short_name": "JEX Fuel",
   "name": "JEX Technologies - Control de Combustible",
-  "description": "Aplicación móvil de campo para el registro transaccional de despacho de Diesel B5.",
+  "description": "Aplicación móvil de campo para el registro transaccional de despacho de combustible.",
   "icons": [
+    {
+      "src": "assets/logo_jex.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
     {
       "src": "assets/logo_jex.png",
       "type": "image/png",
@@ -10,7 +16,8 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/index.html",
+  "start_url": "./index.html",
+  "scope": "./",
   "background_color": "#0F172A",
   "theme_color": "#FF454B",
   "display": "standalone",
