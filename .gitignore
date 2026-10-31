@@ -1,20 +1,76 @@
-# Bloquear archivos de compilación de Python (Caché basura)
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Bloquear configuraciones locales del editor que no deben compartirse
-.vscode/
-
-# Bloquear herramientas locales de desarrollo y túneles
-ngrok.exe
-
-# Bloquear credenciales y variables de entorno de producción
+# ============================================
+# Environment & Secrets (CRÍTICO)
+# ============================================
 .env
-*.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
 
-# Bloquear entornos virtuales locales de Python
-.venv/
+# ============================================
+# Python / Backend
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
 venv/
+.venv/
+env/
 ENV/
+env.bak/
+venv.bak/
+
+# Database files (si se usa SQLite en local)
+*.db
+*.sqlite
+*.sqlite3
+
+# Pytest / Coverage / Linting
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ============================================
+# Frontend & Static Files
+# ============================================
+node_modules/
+.npm
+dist/
+.cache/
+
+# ============================================
+# IDEs & System Files
+# ============================================
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
