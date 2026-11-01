@@ -35,14 +35,13 @@ def verify_password(plain_password: str, stored_hash: str) -> bool:
     2. Bcrypt (Transición)
     3. SHA-256 (Legacy)
     """
-    # 1. Verificar si ya es Argon2id
+    
     if stored_hash.startswith("$argon2id$") or stored_hash.startswith("$argon2i$"):
         try:
             return ph.verify(stored_hash, plain_password)
         except (VerifyMismatchError, InvalidHashError):
             return False
 
-    # 2. Verificar si es Bcrypt
     if stored_hash.startswith("$2b$") or stored_hash.startswith("$2a$"):
         try:
             pwd_bytes = plain_password.encode('utf-8')[:72]
@@ -50,7 +49,6 @@ def verify_password(plain_password: str, stored_hash: str) -> bool:
         except Exception:
             return False
 
-    # 3. Retrocompatibilidad con SHA-256 legacy
     legacy_sha256 = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
     return legacy_sha256 == stored_hash
 
@@ -66,7 +64,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción puedes reemplazar con el dominio exacto de tu PWA
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -94,7 +92,9 @@ class FullLogsheet(BaseModel):
     operator_id: Optional[str] = None    
     truck_id: Optional[str] = None       
     remarks: Optional[str] = None
-    equipments: List[EquipmentDetail]
+    supervisor_signature: Optional[str] = None
+    operator_signature: Optional[str] = None
+    equipments: List[EquipmentDetail] = []
 
 class SupervisorCreate(BaseModel):
     full_name: str
@@ -156,7 +156,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             detail="Contraseña incorrecta. Intente nuevamente."
         )
     
-    # Si la contraseña aún NO es Argon2id (es SHA-256 o Bcrypt), se migra automáticamente
     if not db_password_hash.startswith("$argon2id$"):
         new_argon2_hash = hash_password(payload.password)
         db.execute(
@@ -182,6 +181,12 @@ def get_supervisors(db: Session = Depends(get_db)):
     result = db.execute(text("SELECT supervisor_id, full_name FROM supervisors ORDER BY supervisor_id"))
     return [{"id": row.supervisor_id, "name": row.full_name} for row in result.fetchall()]
 
+@app.get("/api/fuel-types", tags=["Catálogos"])
+def get_fuel_types(db: Session = Depends(get_db)):
+    """Obtiene los tipos de combustible registrados en la tabla fuel_types."""
+    result = db.execute(text("SELECT fuel_type_id, description FROM fuel_types ORDER BY fuel_type_id"))
+    return [{"id": row.fuel_type_id, "name": row.description} for row in result.fetchall()]
+
 @app.get("/api/operators", tags=["Catálogos"])
 def get_operators(db: Session = Depends(get_db)):
     result = db.execute(text("SELECT operator_id, full_name FROM operators ORDER BY operator_id"))
@@ -200,8 +205,8 @@ def get_fuel_trucks(db: Session = Depends(get_db)):
 def create_full_logsheet(payload: FullLogsheet, db: Session = Depends(get_db)):
     try:
         query_header = text("""
-            INSERT INTO fuel_log (log_date, shift, fuel_type, supervisor_id, operator_id, truck_id, remarks) 
-            VALUES (CAST(:log_date AS DATE), :shift, :fuel_type, :supervisor_id, :operator_id, :truck_id, :remarks)
+            INSERT INTO fuel_log (log_date, shift, fuel_type, supervisor_id, operator_id, truck_id, remarks, supervisor_signature, operator_signature) 
+            VALUES (CAST(:log_date AS DATE), :shift, :fuel_type, :supervisor_id, :operator_id, :truck_id, :remarks, :supervisor_signature, :operator_signature)
             RETURNING log_id;
         """)
         result = db.execute(query_header, {
@@ -211,7 +216,9 @@ def create_full_logsheet(payload: FullLogsheet, db: Session = Depends(get_db)):
             "supervisor_id": payload.supervisor_id,
             "operator_id": payload.operator_id if payload.operator_id and payload.operator_id.strip() != "" else None,
             "truck_id": payload.truck_id if payload.truck_id and payload.truck_id.strip() != "" else None,
-            "remarks": payload.remarks if payload.remarks else "Despacho Rutinario"
+            "remarks": payload.remarks if payload.remarks else "Despacho Rutinario",
+            "supervisor_signature": payload.supervisor_signature,
+            "operator_signature": payload.operator_signature
         })
         log_id = result.fetchone()[0]
         
