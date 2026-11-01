@@ -1,0 +1,267 @@
+@import url('https://googleapis.com');
+
+html, body, [data-testid="stAppViewContainer"] {
+    font-family: 'Inter', sans-serif !important;
+    background-color: #0F172A !important;
+}
+
+/* Barra lateral limpia y plana libre de contenedores flotantes */
+[data-testid="stSidebar"] {
+    background-color: #0F172A !important;
+    border-right: 1px solid #1E293B !important;
+}
+
+/* ===========================================================================
+   COMPONENTES DE IDENTIDAD VISUAL (AVATAR Y LOGO LOGIN)
+   =========================================================================== */
+.avatar-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 16px;
+    margin-top: 10px;
+}
+
+.profile-avatar {
+    width: 86px;
+    height: 86px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #FF454B;
+    box-shadow: 0 4px 12px rgba(255, 69, 75, 0.15);
+}
+
+.login-logo-wrapper {
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    margin-bottom: -10px; 
+    padding: 0;
+}
+
+.login-logo-img {
+    max-width: 280px; 
+    width: 100%; 
+    height: auto; 
+    object-fit: contain;
+}
+
+/* Control de posición micrométrico para comprimir el título de Login */
+.login-header-compact {
+    color: #F8FAFC !important;
+    font-size: 24px !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+    text-transform: uppercase;
+    letter-spacing: -0.3px;
+    margin-top: -15px !important;  /* Forza al texto a subir eliminando la holgura del logo */
+    margin-bottom: 5px !important; /* Reduce la separación con el input de usuario al mínimo */
+    padding: 0 !important;
+}
+
+/* Compactador para forzar la reducción de espacio nativo en el bloque del input */
+.stTextInput {
+    margin-top: -10px !important;
+}
+
+
+/* ===========================================================================
+   TIPOGRAFÍA INDUSTRIAL DE ALTA VISIBILIDAD (CAMPO)
+   =========================================================================== */
+.main-header-title {
+    color: #F8FAFC !important;
+    font-size: 28px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.5px;
+    margin-bottom: 32px !important;
+    margin-top: 10px !important;
+    text-transform: uppercase;
+}
+
+.section-title {
+    color: #94A3B8 !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    margin-top: 36px !important;
+    margin-bottom: 16px !important;
+    text-transform: uppercase;
+    border-bottom: 1px solid #1E293B;
+    padding-bottom: 6px;
+}
+
+label[data-testid="stWidgetLabel"] p {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #FFFFFF !important;
+    text-transform: uppercase;
+    margin-bottom: 8px !important;
+}
+
+
+/* ===========================================================================
+   INPUTS, SELECTORES Y ELEMENTOS TÁCTILES (56PX MACRO-ZONA)
+   =========================================================================== */
+[data-testid="stVerticalBlock"] > div {
+    padding-bottom: 0px !important;
+    padding-top: 0px !important;
+    margin-bottom: 16px !important;
+}
+
+.stSelectbox div[data-baseweb="select"], .stTextInput input, .stNumberInput input, .stTextArea textarea {
+    background-color: #1E293B !important;
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+    color: #FFFFFF !important;
+    font-size: 18px !important;
+    padding: 12px 16px !important;
+    min-height: 56px !important; 
+}
+
+.stSelectbox div[data-baseweb="select"]:focus-within, .stTextInput input:focus, .stNumberInput input:focus, .stTextArea textarea:focus {
+    border-color: #FF454B !important;
+    background-color: #1E293B !important;
+    box-shadow: 0 0 0 1px #FF454B !important;
+}
+
+/* Eliminación de contenedores e inflados rígidos nativos para mantener la vista plana */
+div.element-container:has(div.stBorder), div[data-testid="stForm"], [data-testid="stMetric"] {
+    border: none !important;
+    background-color: transparent !important;
+    padding: 0px !important;
+    box-shadow: none !important;
+}
+
+.info-text-container {
+    background-color: #1E293B !important;
+    border: 2px dashed #475569 !important;
+    border-radius: 8px;
+    padding: 20px; 
+    text-align: center; 
+    color: #E2E8F0 !important; 
+    font-size: 16px !important;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+/* Métricas integradas directamente en la superficie del lienzo */
+[data-testid="stMetricValue"] {
+    font-size: 36px !important;
+    font-weight: 800 !important;
+    color: #F8FAFC !important;
+    line-height: 1.1 !important;
+}
+
+[data-testid="stMetricLabel"] {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #94A3B8 !important;
+    margin-bottom: 4px !important;
+}
+
+/* ===========================================================================
+   BOTONES DE ACCIÓN INDUSTRIALES Y GRILLES ADMINISTRATIVAS
+   =========================================================================== */
+button[kind="primary"] {
+    background-color: #FF454B !important;
+    border: none !important;
+    color: #FFFFFF !important;
+    font-weight: 800 !important;
+    border-radius: 8px !important;
+    font-size: 18px !important;
+    padding: 16px 24px !important;
+    min-height: 58px !important;
+    letter-spacing: 0.5px;
+}
+
+button[kind="primary"]:hover {
+    background-color: #E03E43 !important;
+}
+
+button[kind="secondary"] {
+    border-radius: 8px !important;
+    border: 2px solid #475569 !important;
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    padding: 12px 20px !important;
+    min-height: 52px !important;
+}
+
+button[kind="secondary"]:hover {
+    border-color: #FF454B !important;
+    color: #FF454B !important;
+}
+
+input:disabled, select:disabled {
+    opacity: 0.2 !important;
+}
+
+#MainMenu, footer { display: none !important; }
+header { background-color: transparent !important; }
+
+/* Contenedores de la grilla plana horizontal de Gestión de Maestros */
+.tabla-minimalista-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1E293B;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    border: 1px solid #1E293B;
+}
+
+.tabla-header-sm {
+    color: #475569 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px !important;
+    border-bottom: 1px solid #1E293B;
+    padding-bottom: 4px;
+}
+
+.stFileUploader {
+    padding-top: 0px !important;
+    margin-top: 4px !important;
+}
+
+/* Marcadores de posición de iframes analíticos */
+.iframe-bi-placeholder {
+    background-color: #1E293B; 
+    height: 300px; 
+    border-radius: 6px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+}
+
+.iframe-bi-text {
+    color: #475569; 
+    font-size: 13px;
+}
+
+/* ===========================================================================
+   COMPACTADOR CONTROLADO EXCLUSIVO PARA GRILLAS TRANSACCIONALES JEX
+   =========================================================================== */
+.tabla-equipos-jex {
+    width: 100%;
+    margin-top: 5px;
+}
+
+/* Corrige la altura forzada nativa para evitar que los elementos floten de forma asimétrica */
+.tabla-equipos-jex .stTextInput>div, .tabla-equipos-jex .stNumberInput>div {
+    margin-bottom: 0px !important;
+}
+
+/* Equilibra el padding nativo del botón papelera con el de las cajas de texto */
+.tabla-equipos-jex .stButton>button {
+    min-height: 56px !important;
+    margin-top: 0px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
