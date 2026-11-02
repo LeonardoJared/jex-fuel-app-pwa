@@ -1,143 +1,628 @@
-@import url('https://googleapis.com');
+/* ==========================================================================
+   SISTEMA DE DISEÑO OFICIAL — JEX TECHNOLOGIES
+   Paleta: Verde Esmeralda (#009A49) + Ámbar Oro (#E8B828) + Grafito (#0B111E)
+   ========================================================================== */
 
-html, body {
-    font-family: 'Inter', sans-serif !important;
-    background-color: #0F172A !important;
-    color: #F8FAFC !important;
-    margin: 0;
-    padding: 16px;
+:root {
+  --bg-main: #090E17;
+  --bg-card: #111A2B;
+  --bg-input: #172338;
+  --bg-input-focus: #1C2C47;
+  
+  --border-card: #1F2D47;
+  --border-subtle: #293B5C;
+  
+  --jex-green: #009A49;
+  --jex-red: #EF4444;
+  --jex-green-hover: #00B355;
+  --jex-green-glow: rgba(0, 154, 73, 0.28);
+  
+  --jex-gold: #E8B828;
+  --jex-gold-glow: rgba(232, 184, 40, 0.22);
+  
+  --status-danger: #EF4444;
+  --text-main: #FFFFFF;
+  --text-muted: #94A3B8;
+  --text-dim: #64748B;
+  
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
 }
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.5;
+  padding: 16px 14px 100px 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   PANTALLA DE LOGIN
+   ========================================================================== */
+#view-login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 20px 10px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 28px 22px;
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.login-logo {
+  height: 48px;
+  width: auto;
+  margin-bottom: 16px;
+  object-fit: contain;
+}
+
+.login-card h3 {
+  font-size: 17px;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.login-card p {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   HEADER Y CHIP DEL SUPERVISOR
+   ========================================================================== */
 .header {
-    margin-bottom: 20px;
+  padding: 8px 4px 12px 4px;
+  border-bottom: 1px solid var(--border-card);
+  margin-bottom: 14px;
 }
 
-h2 {
-    color: #F8FAFC !important;
-    font-size: 24px !important;
-    font-weight: 800 !important;
-    text-transform: uppercase;
-    margin: 0;
-    letter-spacing: -0.5px;
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-logo {
+  height: 32px;
+  width: auto;
+  max-width: 130px;
+  object-fit: contain;
+}
+
+.header-titles h2 {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #FFFFFF;
+}
+
+.supervisor-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(23, 35, 56, 0.6);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-top: 10px;
+}
+
+.supervisor-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.supervisor-info code {
+  color: var(--jex-gold);
+  background: rgba(232, 184, 40, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-logout:active {
+  background: rgba(231, 73, 73, 0.15);
+  color: var(--jex-red);
+  border-color: var(--jex-red);
+}
+
+/* ==========================================================================
+   BADGE DE CONECTIVIDAD (PULSOS INDEPENDIENTES)
+   ========================================================================== */
+.status-badge-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: rgba(17, 26, 43, 0.9);
+  border: 1px solid var(--border-subtle);
+  color: #CBD5E1;
+  transition: all 0.3s ease;
+}
+
+/* 🟢 ONLINE */
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--jex-green) !important;
+  box-shadow: 0 0 6px var(--jex-green);
+  animation: pulse-online-green 2s infinite ease-in-out !important;
+}
+
+@keyframes pulse-online-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 3px #009A49; }
+  50% { transform: scale(1.25); box-shadow: 0 0 10px #009A49; }
+  100% { transform: scale(0.95); box-shadow: 0 0 3px #009A49; }
+}
+
+/* 🔴 OFFLINE */
+.status-badge-compact.offline {
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  color: #EF4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.status-badge-compact.offline .status-dot {
+  background-color: #EF4444 !important;
+  box-shadow: 0 0 6px #EF4444 !important;
+  animation: pulse-offline-red 1.8s infinite ease-in-out !important;
+}
+
+@keyframes pulse-offline-red {
+  0% { transform: scale(0.95); box-shadow: 0 0 3px #EF4444; }
+  50% { transform: scale(1.25); box-shadow: 0 0 10px #EF4444; }
+  100% { transform: scale(0.95); box-shadow: 0 0 3px #EF4444; }
+}
+
+/* ==========================================================================
+   SECCIONES Y TARJETAS
+   ========================================================================== */
 .section-title {
-    color: #94A3B8 !important;
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    letter-spacing: 1px;
-    margin-top: 24px !important;
-    margin-bottom: 12px !important;
-    text-transform: uppercase;
-    border-bottom: 1px solid #1E293B;
-    padding-bottom: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--jex-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin: 18px 4px 8px 4px;
 }
 
 .card {
-    background-color: #1E293B !important;
-    border: 1px solid #334155 !important;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 14px;
 }
 
+/* ==========================================================================
+   INTERRUPTOR: GUARDIA SIN DESPACHO (STANDBY)
+   ========================================================================== */
+.standby-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(232, 184, 40, 0.06);
+  border: 1px solid rgba(232, 184, 40, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.standby-label {
+  display: flex;
+  flex-direction: column;
+}
+
+.standby-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--jex-gold);
+}
+
+.standby-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 34px;
+  transition: 0.3s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+input:checked + .slider {
+  background-color: var(--jex-gold);
+  border-color: var(--jex-gold);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+  background-color: #090E17;
+}
+
+/* ==========================================================================
+   INPUTS Y FORMULARIOS
+   ========================================================================== */
 label {
-    display: block;
-    font-size: 13px !important;
-    font-weight: 700 !important;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    color: #94A3B8 !important;
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  margin-top: 10px;
 }
 
-select, input, textarea {
-    width: 100%;
-    background-color: #0F172A !important;
-    border: 1px solid #334155 !important;
-    border-radius: 6px;
-    color: #FFFFFF !important;
-    font-size: 16px !important;
-    padding: 12px;
-    box-sizing: border-box;
-    min-height: 52px;
-    margin-bottom: 14px;
+label:first-of-type {
+  margin-top: 0;
 }
 
-select:focus, input:focus, textarea:focus {
-    border-color: #FF454B !important;
-    outline: none;
-    box-shadow: 0 0 0 1px #FF454B;
+input[type="text"],
+input[type="password"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  background: var(--bg-input);
+  color: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
 }
 
-/* Grilla Transaccional Móvil */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--jex-green);
+  background: var(--bg-input-focus);
+  box-shadow: 0 0 0 3px var(--jex-green-glow);
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 75px;
+}
+
+/* ==========================================================================
+   GRILLA DINÁMICA
+   ========================================================================== */
 .grid-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 100px 50px;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr 90px 75px 44px;
+  gap: 8px;
+  align-items: center;
+  background: rgba(23, 35, 56, 0.5);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-card);
+  margin-bottom: 8px;
 }
 
 .grid-row input {
-    margin-bottom: 0px !important;
+  padding: 10px 8px;
+  font-size: 14px;
 }
 
 .btn-delete {
-    background-color: #1E293B !important;
-    color: #FF454B !important;
-    border: 1px solid #475569 !important;
-    border-radius: 6px;
-    height: 52px;
-    font-size: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dim);
+  border: 1px solid var(--border-subtle);
+  height: 42px;
+  width: 42px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete:active {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--status-danger);
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
 .btn-secondary {
-    background-color: #1E293B !important;
-    color: #FFFFFF !important;
-    border: 2px solid #475569 !important;
-    border-radius: 8px;
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    padding: 12px;
-    cursor: pointer;
-    width: auto;
-    float: right;
+  width: 100%;
+  background: rgba(232, 184, 40, 0.06);
+  border: 1px dashed var(--jex-gold);
+  color: var(--jex-gold);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.btn-secondary:hover {
-    border-color: #FF454B !important;
-    color: #FF454B !important;
+.btn-secondary:active {
+  background: rgba(232, 184, 40, 0.15);
 }
 
+/* ==========================================================================
+   PANEL TOTALIZADOR
+   ========================================================================== */
+.metrics-panel {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.metric-box {
+  background: #0B111D;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+}
+
+.metric-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  font-size: 21px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-top: 2px;
+}
+
+.metric-value.highlight {
+  color: var(--jex-gold);
+}
+
+/* ==========================================================================
+   BOTÓN PRINCIPAL
+   ========================================================================== */
 .btn-primary {
-    width: 100%;
-    background-color: #FF454B !important;
-    color: #FFFFFF !important;
-    border: none !important;
-    border-radius: 8px;
-    font-size: 18px !important;
-    font-weight: 800 !important;
-    padding: 16px;
-    cursor: pointer;
-    text-transform: uppercase;
-    margin-top: 15px;
+  width: 100%;
+  background: linear-gradient(135deg, #00A850 0%, #008740 100%);
+  color: #FFFFFF;
+  border: none;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 18px var(--jex-green-glow);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 10px;
 }
 
-.btn-primary:hover {
-    background-color: #E03E43 !important;
+.btn-primary:active {
+  background: #007A39;
+  transform: translateY(1px);
 }
 
-.status-badge {
-    background-color: #1E293B !important;
-    border: 1px dashed #475569 !important;
-    padding: 12px;
-    text-align: center;
-    font-size: 13px !important;
-    color: #94A3B8 !important;
-    border-radius: 6px;
-    font-weight: 600;
+/* ==========================================================================
+   TOASTS
+   ========================================================================== */
+#toast-container {
+  position: fixed;
+  top: 16px;
+  left: 14px;
+  right: 14px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  background: #142036;
+  color: #FFFFFF;
+  border-left: 5px solid var(--jex-green);
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.success { border-left-color: var(--jex-green); }
+.toast.warning { border-left-color: var(--jex-gold); }
+.toast.error { border-left-color: var(--status-danger); }
+
+/* ==========================================================================
+   LIENZOS DE FIRMA DIGITAL TÁCTIL (Touch Friendly)
+   ========================================================================== */
+.signature-box {
+  background: #0E1524;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-top: 10px;
+  position: relative;
+}
+
+.signature-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.signature-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--jex-gold);
+  letter-spacing: 0.5px;
+}
+
+.btn-clear-sig {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-clear-sig:active {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--jex-red);
+}
+
+.canvas-signature {
+  width: 100%;
+  height: 120px;
+  background: #090E17;
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+/* ==========================================================================
+   SELECTOR SEGMENTADO DE GUARDIA (DÍA / NOCHE)
+   ========================================================================== */
+.shift-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.shift-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shift-btn:active {
+  transform: scale(0.98);
+}
+
+.shift-btn.active {
+  background: rgba(232, 184, 40, 0.15);
+  border-color: var(--jex-gold);
+  color: var(--jex-gold);
+  box-shadow: 0 0 12px var(--jex-gold-glow);
 }

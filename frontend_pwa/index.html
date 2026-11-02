@@ -2,219 +2,500 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JEX Fuel - Supervisor de Campo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>JEX Fuel Control</title>
     
-    <meta name="theme-color" content="#FF454B">
-    <link rel="manifest" href="manifest.json">
-    
+    <meta name="theme-color" content="#090E17">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JEX Fuel">
     <link rel="apple-touch-icon" href="assets/logo_jex.png">
+    <link rel="manifest" href="manifest.json">
 
     <link rel="stylesheet" href="styles_pwa.css">
 </head>
 <body>
 
-    <div class="header">
-        <h2>Control de Combustible</h2>
-        <div style="color: #FF454B; font-size: 12px; font-weight: 700; margin-top: 4px; letter-spacing: 0.5px;">📋 PWA MÓVIL — CAMPO</div>
-    </div>
+    <div id="toast-container"></div>
 
-    <div id="connection-status" class="status-badge" style="margin-bottom: 15px;">
-        🟢 CONECTADO AL PLANTEL JEX
-    </div>
+    <!-- ===================================================================
+         VISTA 1: PANTALLA DE LOGIN
+         =================================================================== -->
+    <div id="view-login">
+        <div class="login-card">
+            <img src="assets/logo_jex.png" alt="JEX Technologies" class="login-logo">
+            <h3>LOGIN</h3>
+            
+            <div style="text-align: left; margin-bottom: 12px;">
+                <label>USUARIO:</label>
+                <input type="text" id="login_username" autocomplete="username">
+            </div>
 
-    <p class="section-title">Datos Generales</p>
-    <div class="card">
-        <label>Fecha de Operación</label>
-        <input type="date" id="log_date">
+            <div style="text-align: left; margin-bottom: 20px;">
+                <label>CONTRASEÑA:</label>
+                <input type="password" id="login_password" autocomplete="current-password">
+            </div>
 
-        <label>Guardia / Turno</label>
-        <select id="shift">
-            <option value="-">-- SELECCIONE TURNO --</option>
-            <option value="DIA">DIA</option>
-            <option value="NOCHE">NOCHE</option>
-        </select>
-
-        <label>Tipo de Combustible</label>
-        <select id="fuel_type">
-            <option value="DIESEL B5">DIESEL B5</option>
-        </select>
-
-        <label>Operador de Cisterna</label>
-        <select id="operator">
-            <option value="">Cargando operadores...</option>
-        </select>
-
-        <label>Cisterna (Placa de Unidad)</label>
-        <select id="truck">
-            <option value="">Cargando cisternas...</option>
-        </select>
-    </div>
-
-    <p class="section-title">Equipos Despachados</p>
-    <div class="card">
-        <div id="equipments-container">
-
-        </div>
-        <div style="overflow: hidden; margin-top: 10px;">
-            <button class="btn-secondary" onclick="agregarFila()">➕ AGREGAR FILA</button>
+            <button type="button" class="btn-primary" onclick="ejecutarLogin()">INGRESAR</button>
         </div>
     </div>
 
-    <p class="section-title">Observaciones de Campo</p>
-    <div class="card">
-        <textarea id="remarks" rows="3" placeholder="Notas e incidencias en plantel..."></textarea>
-    </div>
+    <!-- ===================================================================
+         VISTA 2: FORMULARIO PRINCIPAL CON FIRMAS
+         =================================================================== -->
+    <div id="view-form" style="display: none;">
+        <header class="header">
+            <div class="header-top">
+                <div class="header-brand">
+                    <img src="assets/logo_jex.png" alt="JEX Technologies" class="header-logo">
+                    <div class="header-titles">
+                        <h5>CONTROL DE COMBUSTIBLE</h5>
+                    </div>
+                </div>
 
-    <button class="btn-primary" onclick="enviarReporte()">Enviar Reporte a Plataforma</button>
+                <div id="connection-status" class="status-badge-compact">
+                    <span class="status-dot"></span>
+                    <span id="status-text">ONLINE</span>
+                </div>
+            </div>
+
+            <div class="supervisor-bar">
+                <div class="supervisor-info">
+                    <span>👤 <span id="lbl_supervisor_name">Supervisor</span></span>
+                    <code id="lbl_supervisor_code">SUP-00</code>
+                </div>
+                <button type="button" class="btn-logout" onclick="cerrarSesion()">CERRAR SESIÓN</button>
+            </div>
+        </header>
+
+        <!-- Sección 1: Datos Generales -->
+        <p class="section-title">Datos Generales</p>
+        <div class="card">
+            <label>FECHA</label>
+            <input type="date" id="log_date">
+
+            <label>GUARDIA</label>
+            <div class="shift-selector">
+                <button type="button" id="btn-shift-dia" class="shift-btn" onclick="seleccionarGuardia('DIA')">
+                    ☀️ DÍA
+                </button>
+                <button type="button" id="btn-shift-noche" class="shift-btn" onclick="seleccionarGuardia('NOCHE')">
+                    🌙 NOCHE
+                </button>
+            </div>
+            <input type="hidden" id="shift" value="DIA">
+
+            <label>TIPO DE COMBUSTIBLE</label>
+            <select id="fuel_type">
+                <option value="-">-- SELECCIONE COMBUSTIBLE --</option>
+            </select>
+
+            <label>OPERADOR DE CISTERNA</label>
+            <select id="operator">
+                <option value="-">-- SELECCIONE OPERADOR --</option>
+            </select>
+
+            <label>PLACA DE CISTERNA</label>
+            <select id="truck">
+                <option value="-">-- SELECCIONE CISTERNA --</option>
+            </select>
+        </div>
+
+        <!-- Sección 2: Grilla Dinámica de Equipos Despachados -->
+        <p class="section-title">Equipos Despachados</p>
+        <div class="card">
+            <div id="equipments-container"></div>
+            
+            <button type="button" class="btn-secondary" onclick="agregarFila()">
+                ➕ AGREGAR EQUIPO
+            </button>
+
+            <div class="metrics-panel">
+                <div class="metric-box">
+                    <div class="metric-title">TOTAL DESPACHADO</div>
+                    <div id="metric-total-gln" class="metric-value highlight">0.0 GLN</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-title">TOTAL DE ITEMS</div>
+                    <div id="metric-total-count" class="metric-value">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección 3: Observaciones -->
+        <p class="section-title">Observaciones</p>
+        <div class="card">
+            <button type="button" class="btn-secondary" style="margin-bottom: 10px; font-size: 11px; padding: 7px 10px; border-style: solid;" onclick="document.getElementById('remarks').value = 'No se abasteció combustible'; ajustarVisibilidadFirmas();">
+                ⚡ Rellenar: "No se abasteció combustible"
+            </button>
+            <textarea id="remarks"></textarea>
+        </div>
+
+        <!-- Sección 4: Firmas Digitales de Conformidad -->
+        <p class="section-title">FIRMAS DIGITALES</p>
+        <div class="card">
+            <div class="signature-box">
+                <div class="signature-header">
+                    <span class="signature-title">✍️ SUPERVISOR</span>
+                    <button type="button" class="btn-clear-sig" onclick="limpiarFirma('sup')">LIMPIAR</button>
+                </div>
+                <canvas id="canvas-sup" class="canvas-signature"></canvas>
+            </div>
+
+            <div id="box-sig-operador" class="signature-box">
+                <div class="signature-header">
+                    <span class="signature-title">✍️ OPERADOR DE CISTERNA</span>
+                    <button type="button" class="btn-clear-sig" onclick="limpiarFirma('ope')">LIMPIAR</button>
+                </div>
+                <canvas id="canvas-ope" class="canvas-signature"></canvas>
+            </div>
+        </div>
+
+        <button class="btn-primary" type="button" onclick="enviarReporte()">
+            ENVIAR REPORTE
+        </button>
+    </div>
 
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('🚀 PWA: Service Worker registrado.', reg))
-                    .catch(err => console.error('❌ PWA: Error al registrar Service Worker.', err));
-            });
-        }
-
         const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
             ? "http://localhost:8000"
             : `http://${window.location.hostname}:8000`;
 
-        const SUPERVISOR_ACTIVO = localStorage.getItem("jex_supervisor_id") || "SUP-01"; 
+        // ===========================================================================
+        // 1. GESTIÓN DE SESIÓN
+        // ===========================================================================
+        function verificarSesion() {
+            const supervisorId = localStorage.getItem("jex_supervisor_id");
+            const supervisorName = localStorage.getItem("jex_supervisor_name");
+
+            if (supervisorId) {
+                document.getElementById("view-login").style.display = "none";
+                document.getElementById("view-form").style.display = "block";
+                document.getElementById("lbl_supervisor_name").innerText = supervisorName || "Supervisor";
+                document.getElementById("lbl_supervisor_code").innerText = supervisorId;
+                cargarCatalogos();
+                setTimeout(inicializarPadsDeFirma, 200);
+            } else {
+                document.getElementById("view-login").style.display = "flex";
+                document.getElementById("view-form").style.display = "none";
+            }
+        }
+
+        async function ejecutarLogin() {
+            const user = document.getElementById("login_username").value.trim();
+            const pass = document.getElementById("login_password").value.trim();
+
+            if (!user || !pass) {
+                mostrarToast("⚠️ Ingrese usuario y contraseña.", "warning");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem("jex_supervisor_id", data.supervisor_id || "SUP-01");
+                    localStorage.setItem("jex_supervisor_name", data.name);
+                    localStorage.setItem("jex_user_role", data.role);
+                    
+                    mostrarToast(`Bienvenido, ${data.name}`, "success");
+                    verificarSesion();
+                    limpiarFormulario();
+                } else {
+                    const err = await res.json();
+                    mostrarToast(`❌ ${err.detail || 'Credenciales inválidas.'}`, "error");
+                }
+            } catch {
+                mostrarToast("📡 Error de red: No se pudo conectar con el servidor para autenticar.", "error");
+            }
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem("jex_supervisor_id");
+            localStorage.removeItem("jex_supervisor_name");
+            localStorage.removeItem("jex_user_role");
+            verificarSesion();
+        }
 
         // ===========================================================================
-        // CONFIGURACIÓN DE INDEXEDDB (OFFLINE STORAGE)
+        // 2. SISTEMA DE LIENZO Y FIRMA DIGITAL TÁCTIL
+        // ===========================================================================
+        let canvasSup, ctxSup, padSup;
+        let canvasOpe, ctxOpe, padOpe;
+        let firmoSupervisor = false;
+        let firmoOperador = false;
+
+        function prepararCanvas(canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth || 350;
+            canvas.height = canvas.offsetHeight || 120;
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#00FF7F';
+            return ctx;
+        }
+
+        function configurarEventosFirma(canvas, ctx, alDibujar) {
+            let dibujando = false;
+
+            function obtenerPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clienteX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clienteY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: clienteX - rect.left,
+                    y: clienteY - rect.top
+                };
+            }
+
+            function iniciar(e) {
+                dibujando = true;
+                const pos = obtenerPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                alDibujar();
+            }
+
+            function mover(e) {
+                if (!dibujando) return;
+                const pos = obtenerPos(e);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                alDibujar();
+            }
+
+            function terminar() {
+                dibujando = false;
+            }
+
+            canvas.addEventListener('mousedown', iniciar);
+            canvas.addEventListener('mousemove', mover);
+            window.addEventListener('mouseup', terminar);
+
+            canvas.addEventListener('touchstart', iniciar, { passive: false });
+            canvas.addEventListener('touchmove', mover, { passive: false });
+            window.addEventListener('touchend', terminar);
+        }
+
+        function inicializarPadsDeFirma() {
+            canvasSup = document.getElementById('canvas-sup');
+            canvasOpe = document.getElementById('canvas-ope');
+
+            if (canvasSup && !ctxSup) {
+                ctxSup = prepararCanvas(canvasSup);
+                configurarEventosFirma(canvasSup, ctxSup, () => { firmoSupervisor = true; });
+            }
+            if (canvasOpe && !ctxOpe) {
+                ctxOpe = prepararCanvas(canvasOpe);
+                configurarEventosFirma(canvasOpe, ctxOpe, () => { firmoOperador = true; });
+            }
+        }
+
+        function limpiarFirma(tipo) {
+            if (tipo === 'sup' && ctxSup) {
+                ctxSup.clearRect(0, 0, canvasSup.width, canvasSup.height);
+                firmoSupervisor = false;
+            }
+            if (tipo === 'ope' && ctxOpe) {
+                ctxOpe.clearRect(0, 0, canvasOpe.width, canvasOpe.height);
+                firmoOperador = false;
+            }
+        }
+
+        function ajustarVisibilidadFirmas() {
+            const rows = document.querySelectorAll(".grid-row");
+            let hayGalones = false;
+            rows.forEach(r => {
+                const q = parseFloat(r.querySelector(".eq-qty")?.value || 0);
+                if (q > 0) hayGalones = true;
+            });
+
+            const boxOpe = document.getElementById("box-sig-operador");
+            if (boxOpe) {
+                boxOpe.style.display = hayGalones ? "block" : "none";
+            }
+        }
+
+        // ===========================================================================
+        // 3. FECHA LOCAL Y UTILIDADES
+        // ===========================================================================
+        function obtenerFechaLocal() {
+            const hoy = new Date();
+            const anio = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            return `${anio}-${mes}-${dia}`;
+        }
+
+        function mostrarToast(mensaje, tipo = "info") {
+            const container = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+            toast.className = `toast ${tipo}`;
+            toast.innerText = mensaje;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add("show"), 10);
+            setTimeout(() => {
+                toast.classList.remove("show");
+                setTimeout(() => toast.remove(), 350);
+            }, 3500);
+        }
+
+        function seleccionarGuardia(turno) {
+            document.getElementById('shift').value = turno;
+            
+            const btnDia = document.getElementById('btn-shift-dia');
+            const btnNoche = document.getElementById('btn-shift-noche');
+
+            if (turno === 'DIA') {
+                btnDia.classList.add('active');
+                btnNoche.classList.remove('active');
+            } else {
+                btnNoche.classList.add('active');
+                btnDia.classList.remove('active');
+            }
+        }
+
+        function autodetectarGuardia() {
+            const hora = new Date().getHours();
+            if (hora >= 7 && hora < 19) {
+                seleccionarGuardia('DIA');
+            } else {
+                seleccionarGuardia('NOCHE');
+            }
+        }
+
+        // ===========================================================================
+        // 4. BASE DE DATOS LOCAL OFFLINE (INDEXEDDB)
         // ===========================================================================
         let dbLocal;
         const requestDB = indexedDB.open("JEX_Local_DB", 1);
-
-        requestDB.onupgradeneeded = function(event) {
-            const db = event.target.result;
+        requestDB.onupgradeneeded = (e) => {
+            const db = e.target.result;
             if (!db.objectStoreNames.contains("despachos_pendientes")) {
                 db.createObjectStore("despachos_pendientes", { keyPath: "id", autoIncrement: true });
             }
         };
-
-        requestDB.onsuccess = function(event) {
-            dbLocal = event.target.result;
-            console.log("IndexedDB inicializado correctamente.");
-        };
-
-        requestDB.onerror = function(event) {
-            console.error("IndexedDB error:", event.target.error);
-        };
-
-        document.getElementById('log_date').value = new Date().toISOString().split('T')[0];
+        requestDB.onsuccess = (e) => dbLocal = e.target.result;
 
         // ===========================================================================
-        // CARGA DE CATÁLOGOS CON CACHÉ LOCAL
+        // 5. CATÁLOGOS CON CACHÉ LOCAL
         // ===========================================================================
         async function cargarCatalogos() {
             try {
-                const resOpe = await fetch(`${BACKEND_URL}/api/operators`);
-                const operadores = await resOpe.json();
-                localStorage.setItem("jex_cached_operators", JSON.stringify(operadores));
-                renderOperadores(operadores);
+                const res = await fetch(`${BACKEND_URL}/api/operators`);
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem("jex_cached_operators", JSON.stringify(data));
+                    poblarSelect("operator", data, "-- SELECCIONE OPERADOR --");
+                }
+            } catch {
+                poblarSelect("operator", JSON.parse(localStorage.getItem("jex_cached_operators") || "[]"), "-- SELECCIONE OPERADOR --");
+            }
 
-                const resTru = await fetch(`${BACKEND_URL}/api/fuel-trucks`);
-                const cisternas = await resTru.json();
-                localStorage.setItem("jex_cached_trucks", JSON.stringify(cisternas));
-                renderCisternas(cisternas);
-            } catch (error) {
-                console.warn("Sin conexión directa. Usando catálogos en caché local.");
-                marcarOffline();
-                const cachedOpe = JSON.parse(localStorage.getItem("jex_cached_operators") || "[]");
-                const cachedTru = JSON.parse(localStorage.getItem("jex_cached_trucks") || "[]");
-                renderOperadores(cachedOpe);
-                renderCisternas(cachedTru);
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/fuel-trucks`);
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem("jex_cached_trucks", JSON.stringify(data));
+                    poblarSelect("truck", data, "-- SELECCIONE CISTERNA --");
+                }
+            } catch {
+                poblarSelect("truck", JSON.parse(localStorage.getItem("jex_cached_trucks") || "[]"), "-- SELECCIONE CISTERNA --");
+            }
+
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/fuel-types`);
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem("jex_cached_fuels", JSON.stringify(data));
+                    poblarSelect("fuel_type", data, "-- SELECCIONE COMBUSTIBLE --");
+                }
+            } catch {
+                poblarSelect("fuel_type", JSON.parse(localStorage.getItem("jex_cached_fuels") || "[]"), "-- SELECCIONE COMBUSTIBLE --");
             }
         }
 
-        function renderOperadores(lista) {
-            const select = document.getElementById("operator");
-            select.innerHTML = '<option value="-">-- SELECCIONE OPERADOR --</option>';
-            lista.forEach(o => select.innerHTML += `<option value="${o.id}">${o.name}</option>`);
+        function poblarSelect(id, lista, placeholder) {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+
+            sel.innerHTML = `<option value="-">${placeholder}</option>`;
+
+            if (Array.isArray(lista) && lista.length > 0) {
+                lista.forEach(item => {
+                    sel.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                });
+            }
         }
 
-        function renderCisternas(lista) {
-            const select = document.getElementById("truck");
-            select.innerHTML = '<option value="-">-- SELECCIONE CISTERNA --</option>';
-            lista.forEach(t => select.innerHTML += `<option value="${t.id}">${t.name}</option>`);
-        }
-
-        function marcarOffline() {
-            const status = document.getElementById("connection-status");
-            status.innerHTML = "⚠️ MODO OFFLINE — GUARDANDO EN MEMORIA LOCAL";
-            status.style.borderColor = "#FF454B";
-            status.style.color = "#FF454B";
-        }
-
+        // ===========================================================================
+        // 6. GRILLA DINÁMICA DE EQUIPOS Y CÁLCULO DE TOTALES
+        // ===========================================================================
         function agregarFila(name = "", code = "", qty = "") {
             const container = document.getElementById("equipments-container");
             const div = document.createElement("div");
             div.className = "grid-row";
             div.innerHTML = `
-                <input type="text" placeholder="Ej: Excavadora CAT" class="eq-name" value="${name}">
-                <input type="text" placeholder="Ej: EX-04" class="eq-code" value="${code}">
-                <input type="number" step="0.1" placeholder="Gln" class="eq-qty" value="${qty}">
-                <button class="btn-delete" type="button" onclick="this.parentElement.remove()">🗑️</button>
+                <input type="text" placeholder="EQUIPO" class="eq-name" value="${name}">
+                <input type="text" placeholder="CÓDIGO" class="eq-code" value="${code}">
+                <input type="number" step="0.1" min="0" placeholder="GLN" class="eq-qty" value="${qty}" oninput="calcularTotales()">
+                <button class="btn-delete" type="button" onclick="this.parentElement.remove(); calcularTotales();">✕</button>
             `;
             container.appendChild(div);
+            calcularTotales();
+        }
+
+        function calcularTotales() {
+            const inputs = document.querySelectorAll(".eq-qty");
+            let totalGln = 0;
+            let totalItems = 0;
+            inputs.forEach(input => {
+                const val = parseFloat(input.value);
+                if (!isNaN(val) && val > 0) {
+                    totalGln += val;
+                    totalItems++;
+                }
+            });
+            document.getElementById("metric-total-gln").innerText = `${totalGln.toFixed(1)} GLN`;
+            document.getElementById("metric-total-count").innerText = totalItems;
+            ajustarVisibilidadFirmas();
         }
 
         // ===========================================================================
-        // PERSISTENCIA OFFLINE EN INDEXEDDB
-        // ===========================================================================
-        function guardarDespachoOffline(payload) {
-            if (!dbLocal) {
-                alert("❌ Error: Base de datos local no inicializada.");
-                return;
-            }
-
-            const transaction = dbLocal.transaction(["despachos_pendientes"], "readwrite");
-            const store = transaction.objectStore("despachos_pendientes");
-            const request = store.add(payload);
-
-            request.onsuccess = function() {
-                alert("⚠️ Sin señal: Despacho guardado en la memoria de este celular. Se sincronizará automáticamente al detectar conexión.");
-                document.getElementById("equipments-container").innerHTML = "";
-                document.getElementById("remarks").value = "";
-                agregarFila();
-            };
-
-            request.onerror = function(event) {
-                alert("❌ Error al guardar localmente: " + event.target.error);
-            };
-        }
-
-        // ===========================================================================
-        // ENVÍO TRANSACCIONAL
+        // 7. ENVÍO CON CONTROL INTELIGENTE DE FIRMAS
         // ===========================================================================
         async function enviarReporte() {
-            const shift = document.getElementById("shift").value;
-            const operator_id = document.getElementById("operator").value;
-            const truck_id = document.getElementById("truck").value;
-            
-            if (shift === "-" || operator_id === "-" || truck_id === "-" || !operator_id || !truck_id) {
-                alert("⚠️ Complete todos los campos generales obligatorios.");
+            const supervisorId = localStorage.getItem("jex_supervisor_id");
+            if (!supervisorId) {
+                mostrarToast("❌ Sesión expirada. Inicie sesión nuevamente.", "error");
+                verificarSesion();
                 return;
             }
+
+            const shift = document.getElementById("shift").value;
+            if (shift === "-") {
+                mostrarToast("⚠️ AVISO: Seleccione la Guardia", "warning");
+                return;
+            }
+
+            const remarks = document.getElementById("remarks").value.trim();
 
             const rows = document.querySelectorAll(".grid-row");
             const equipments = [];
-            
-            rows.forEach((row, index) => {
+            rows.forEach((row, idx) => {
                 const name = row.querySelector(".eq-name").value.trim();
                 const code = row.querySelector(".eq-code").value.trim();
                 const qty = parseFloat(row.querySelector(".eq-qty").value);
-
                 if (name && code && qty > 0) {
                     equipments.push({
-                        "item_number": index + 1,
+                        "item_number": idx + 1,
                         "equipment_name": name,
                         "equipment_code": code,
                         "quantity_gln": qty
@@ -222,19 +503,51 @@
                 }
             });
 
-            if (equipments.length === 0) {
-                alert("⚠️ Debe registrar al menos un equipo con galonaje mayor a cero.");
+            if (!firmoSupervisor) {
+                mostrarToast("✍️ OBLIGATORIO: El supervisor debe estampar su firma digital.", "warning");
                 return;
+            }
+
+            let payloadOperator = null;
+            let payloadTruck = null;
+            let payloadSigOperator = null;
+
+            if (equipments.length > 0) {
+                const op = document.getElementById("operator").value;
+                const tr = document.getElementById("truck").value;
+
+                if (op === "-" || tr === "-" || !op || !tr) {
+                    mostrarToast("⚠️ AVISO: Debe seleccionar Operador y Cisterna.", "warning");
+                    return;
+                }
+                if (!firmoOperador) {
+                    mostrarToast("✍️ OBLIGATORIO: El operador de cisterna debe firmar la conformidad.", "warning");
+                    return;
+                }
+
+                payloadOperator = op;
+                payloadTruck = tr;
+                payloadSigOperator = canvasOpe.toDataURL("image/png");
+            } else {
+                if (!remarks) {
+                    mostrarToast("⚠️ AVISO: Indique en observaciones que no hubo abastecimiento.", "warning");
+                    return;
+                }
+                payloadOperator = null;
+                payloadTruck = null;
+                payloadSigOperator = null;
             }
 
             const payload = {
                 "log_date": document.getElementById("log_date").value,
                 "shift": shift,
                 "fuel_type": document.getElementById("fuel_type").value,
-                "supervisor_id": SUPERVISOR_ACTIVO,
-                "operator_id": operator_id,
-                "truck_id": truck_id,
-                "remarks": document.getElementById("remarks").value.trim(),
+                "supervisor_id": supervisorId,
+                "operator_id": payloadOperator,
+                "truck_id": payloadTruck,
+                "remarks": remarks || "Despacho Rutinario",
+                "supervisor_signature": canvasSup.toDataURL("image/png"),
+                "operator_signature": payloadSigOperator,
                 "equipments": equipments
             };
 
@@ -244,76 +557,145 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 if (response.ok) {
-                    alert("🚀 ¡Reporte enviado con éxito al servidor central!");
-                    document.getElementById("equipments-container").innerHTML = "";
-                    document.getElementById("remarks").value = "";
-                    agregarFila();
+                    mostrarToast("🚀 ¡Reporte registrado correctamente!", "success");
+                    limpiarFormulario();
                 } else {
                     const err = await response.json();
-                    alert(`❌ Error del servidor: ${err.detail || "Transacción rechazada"}`);
+                    mostrarToast(`❌ Error: ${err.detail || 'Rechazado'}`, "error");
                 }
-            } catch (error) {
-                console.log("Red inaccesible. Guardando en almacenamiento local...");
+            } catch {
                 guardarDespachoOffline(payload);
             }
         }
 
+        function guardarDespachoOffline(payload) {
+            if (!dbLocal) return;
+            const tx = dbLocal.transaction(["despachos_pendientes"], "readwrite");
+            tx.objectStore("despachos_pendientes").add(payload);
+            tx.oncomplete = () => {
+                mostrarToast("⚠️ AVISO: Reporte resguardado en memoria local.", "warning");
+                limpiarFormulario();
+            };
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('log_date').value = obtenerFechaLocal();
+            document.getElementById('shift').value = "-";
+            document.getElementById('fuel_type').selectedIndex = 0;
+            document.getElementById('operator').value = "-";
+            document.getElementById('truck').value = "-";
+            document.getElementById("remarks").value = "";
+            document.getElementById("equipments-container").innerHTML = "";
+
+            limpiarFirma('sup');
+            limpiarFirma('ope');
+
+            agregarFila();
+            calcularTotales();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         // ===========================================================================
-        // SINCRONIZACIÓN AUTOMÁTICA EN SEGUNDO PLANO
+        // 8. SINCRONIZACIÓN EN SEGUNDO PLANO
         // ===========================================================================
         async function sincronizarDespachosPendientes() {
             if (!dbLocal) return;
-
-            const transaction = dbLocal.transaction(["despachos_pendientes"], "readonly");
-            const store = transaction.objectStore("despachos_pendientes");
-            const request = store.getAll();
-
-            request.onsuccess = async function(event) {
-                const registros = event.target.result;
-                if (!registros || registros.length === 0) return;
-
-                console.log(`📡 Sincronizador: Subiendo ${registros.length} reportes pendientes...`);
-                
-                for (let registro of registros) {
+            const tx = dbLocal.transaction(["despachos_pendientes"], "readonly");
+            const req = tx.objectStore("despachos_pendientes").getAll();
+            req.onsuccess = async (e) => {
+                const items = e.target.result;
+                if (!items || items.length === 0) return;
+                for (let item of items) {
                     try {
-                        const { id, ...payloadParaAPI } = registro;
-
-                        const response = await fetch(`${BACKEND_URL}/api/fuel-logsheet-complete`, {
+                        const { id, ...data } = item;
+                        const res = await fetch(`${BACKEND_URL}/api/fuel-logsheet-complete`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payloadParaAPI)
+                            body: JSON.stringify(data)
                         });
-
-                        if (response.ok) {
-                            const deleteTx = dbLocal.transaction(["despachos_pendientes"], "readwrite");
-                            deleteTx.objectStore("despachos_pendientes").delete(id);
-                            console.log(`✅ Reporte #${id} sincronizado.`);
+                        if (res.ok) {
+                            const delTx = dbLocal.transaction(["despachos_pendientes"], "readwrite");
+                            delTx.objectStore("despachos_pendientes").delete(id);
+                            mostrarToast("✅ Despacho con firmas sincronizado", "success");
                         }
-                    } catch (err) {
-                        console.warn("Servidor aún no disponible. Reintentando después.");
+                    } catch {
                         break;
                     }
                 }
             };
         }
 
-        window.addEventListener("online", () => {
-            const status = document.getElementById("connection-status");
-            status.innerHTML = "🟢 CONECTADO AL PLANTEL JEX";
-            status.style.borderColor = "#475569";
-            status.style.color = "#94A3B8";
-            cargarCatalogos();
-            sincronizarDespachosPendientes();
-        });
+        // ===========================================================================
+        // 9. MONITOR EN TIEMPO REAL
+        // ===========================================================================
+        let estadoConexionActual = null;
 
-        window.addEventListener("offline", marcarOffline);
+        async function chequearSaludServidor() {
+            if (!navigator.onLine) {
+                aplicarEstadoVisual(false);
+                return;
+            }
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+                const res = await fetch(`${BACKEND_URL}/health`, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (res.ok) aplicarEstadoVisual(true);
+                else aplicarEstadoVisual(false);
+            } catch {
+                aplicarEstadoVisual(false);
+            }
+        }
+
+        function aplicarEstadoVisual(estaOnline) {
+            const status = document.getElementById("connection-status");
+            const statusText = document.getElementById("status-text");
+            if (!status || !statusText) return;
+
+            if (estaOnline) {
+                if (estadoConexionActual !== true) {
+                    estadoConexionActual = true;
+                    status.className = "status-badge-compact";
+                    statusText.innerText = "ONLINE";
+                    cargarCatalogos();
+                    sincronizarDespachosPendientes();
+                }
+            } else {
+                if (estadoConexionActual !== false) {
+                    estadoConexionActual = false;
+                    status.className = "status-badge-compact offline";
+                    statusText.innerText = "OFFLINE";
+                    cargarCatalogos();
+                }
+            }
+        }
+
+        window.addEventListener("online", () => chequearSaludServidor());
+        window.addEventListener("offline", () => aplicarEstadoVisual(false));
+        setInterval(chequearSaludServidor, 4000);
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('🚀 SW registrado:', reg.scope))
+                    .catch(err => console.error('❌ Error SW:', err));
+            });
+        }
 
         window.addEventListener("DOMContentLoaded", () => {
-            cargarCatalogos();
+            document.getElementById('log_date').value = obtenerFechaLocal();
+            autodetectarGuardia();
+            verificarSesion();
+            chequearSaludServidor();
             agregarFila();
-            setTimeout(sincronizarDespachosPendientes, 2500);
         });
     </script>
 </body>

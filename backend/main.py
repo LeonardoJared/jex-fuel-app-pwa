@@ -101,6 +101,12 @@ class SupervisorCreate(BaseModel):
     username: str
     password: str
 
+class SupervisorUpdate(BaseModel):
+    full_name: str
+    username: str
+    password: Optional[str] = None
+    is_active: bool = True
+
 class OperatorCreate(BaseModel):
     full_name: str
 
@@ -178,8 +184,19 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @app.get("/api/supervisors", tags=["Catálogos"])
 def get_supervisors(db: Session = Depends(get_db)):
-    result = db.execute(text("SELECT supervisor_id, full_name FROM supervisors ORDER BY supervisor_id"))
-    return [{"id": row.supervisor_id, "name": row.full_name} for row in result.fetchall()]
+    """Obtiene supervisores con su usuario y estado activo desde Neon."""
+    result = db.execute(text("""
+        SELECT s.supervisor_id, s.full_name, COALESCE(u.username, '') AS username, COALESCE(u.is_active, TRUE) AS is_active
+        FROM supervisors s
+        LEFT JOIN users u ON s.supervisor_id = u.supervisor_id
+        ORDER BY s.supervisor_id;
+    """)).fetchall()
+    return [{
+        "id": row.supervisor_id, 
+        "name": row.full_name,
+        "username": row.username,
+        "is_active": row.is_active
+    } for row in result]
 
 @app.get("/api/fuel-types", tags=["Catálogos"])
 def get_fuel_types(db: Session = Depends(get_db)):
@@ -248,10 +265,12 @@ def create_full_logsheet(payload: FullLogsheet, db: Session = Depends(get_db)):
 @app.get("/api/fuel-logs-history", tags=["Operaciones"])
 def get_fuel_logs_history(db: Session = Depends(get_db)):
     query = text("""
-        SELECT fl.log_id, fl.log_date, fl.shift, fl.fuel_type, s.full_name AS supervisor, 
+        SELECT fl.log_id, fl.log_date, fl.shift, COALESCE(fl.fuel_type, '-') AS fuel_type, 
+               s.full_name AS supervisor, 
                COALESCE(o.full_name, 'SIN OPERADOR') AS operator, 
                COALESCE(ft.license_plate, 'SIN CISTERNA') AS truck_plate, 
-               fl.remarks
+               fl.remarks, fl.supervisor_signature, fl.operator_signature,
+               COALESCE((SELECT SUM(quantity_gln) FROM fuel_log_details WHERE log_id = fl.log_id), 0) AS total_gln
         FROM fuel_log fl
         INNER JOIN supervisors s ON fl.supervisor_id = s.supervisor_id
         LEFT JOIN operators o ON fl.operator_id = o.operator_id
@@ -267,16 +286,49 @@ def get_fuel_logs_history(db: Session = Depends(get_db)):
         "supervisor": row.supervisor, 
         "operator": row.operator, 
         "truck_plate": row.truck_plate, 
-        "remarks": row.remarks
+        "remarks": row.remarks,
+        "supervisor_signature": row.supervisor_signature,
+        "operator_signature": row.operator_signature,
+        "total_gln": float(row.total_gln)
     } for row in result]
+
+@app.get("/api/fuel-logs/{log_id}/details", tags=["Operaciones"])
+def get_fuel_log_details(log_id: int, db: Session = Depends(get_db)):
+    """Obtiene los equipos despachados para un registro específico."""
+    result = db.execute(text("""
+        SELECT item_number, equipment_name, equipment_code, quantity_gln
+        FROM fuel_log_details
+        WHERE log_id = :log_id
+        ORDER BY item_number ASC;
+    """), {"log_id": log_id}).fetchall()
+    return [{
+        "item": r.item_number, 
+        "equipo": r.equipment_name, 
+        "codigo": r.equipment_code, 
+        "galones": float(r.quantity_gln)
+    } for r in result]
 
 # ===========================================================================
 # REGISTRO Y ELIMINACIÓN DE ENTIDADES
 # ===========================================================================
 
+from sqlalchemy.exc import IntegrityError
+
 @app.post("/api/supervisors", tags=["Gestión"])
 def create_supervisor(payload: SupervisorCreate, db: Session = Depends(get_db)):
     try:
+        # Validar si el usuario ya existe antes de insertar
+        existe_usuario = db.execute(
+            text("SELECT 1 FROM users WHERE LOWER(username) = LOWER(:user)"),
+            {"user": payload.username.strip()}
+        ).scalar()
+        
+        if existe_usuario:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El usuario '@{payload.username.strip().lower()}' ya está registrado. Por favor elija otro."
+            )
+
         query_max = text("""
             SELECT COALESCE(MAX(CAST(SUBSTRING(supervisor_id FROM 5) AS INTEGER)), 0) 
             FROM supervisors 
@@ -285,7 +337,6 @@ def create_supervisor(payload: SupervisorCreate, db: Session = Depends(get_db)):
         last_num = db.execute(query_max).scalar()
         generated_id = f"SUP-{(last_num + 1):02d}"
         
-        # Encriptación con Bcrypt
         secure_password_hash = hash_password(payload.password)
         
         db.execute(
@@ -301,9 +352,68 @@ def create_supervisor(payload: SupervisorCreate, db: Session = Depends(get_db)):
         )
         db.commit()
         return {"status": "success", "message": f"Supervisor creado con código {generated_id}."}
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"El usuario '@{payload.username.strip().lower()}' ya está en uso."
+        )
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error en BD: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error en BD: {str(e)}")
+
+@app.put("/api/supervisors/{supervisor_id}", tags=["Gestión"])
+def update_supervisor(supervisor_id: str, payload: SupervisorUpdate, db: Session = Depends(get_db)):
+    try:
+        # Validar que no choque con el usuario de otra persona
+        existe_en_otro = db.execute(
+            text("SELECT 1 FROM users WHERE LOWER(username) = LOWER(:user) AND supervisor_id != :id"),
+            {"user": payload.username.strip(), "id": supervisor_id}
+        ).scalar()
+
+        if existe_en_otro:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El usuario '@{payload.username.strip().lower()}' ya le pertenece a otro supervisor."
+            )
+
+        db.execute(
+            text("UPDATE supervisors SET full_name = :name WHERE supervisor_id = :id"),
+            {"name": payload.full_name.strip().upper(), "id": supervisor_id}
+        )
+        
+        if payload.password and payload.password.strip():
+            new_hash = hash_password(payload.password.strip())
+            db.execute(
+                text("""
+                    UPDATE users 
+                    SET username = :user, password_hash = :hash, is_active = :active 
+                    WHERE supervisor_id = :id
+                """),
+                {"user": payload.username.strip().lower(), "hash": new_hash, "active": payload.is_active, "id": supervisor_id}
+            )
+        else:
+            db.execute(
+                text("""
+                    UPDATE users 
+                    SET username = :user, is_active = :active 
+                    WHERE supervisor_id = :id
+                """),
+                {"user": payload.username.strip().lower(), "active": payload.is_active, "id": supervisor_id}
+            )
+            
+        db.commit()
+        return {"status": "success", "message": "Supervisor actualizado correctamente."}
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Error al actualizar: {str(e)}")
 
 @app.post("/api/operators", tags=["Gestión"])
 def create_operator(payload: OperatorCreate, db: Session = Depends(get_db)):
