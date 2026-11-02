@@ -12,15 +12,16 @@ Plataforma integral para el registro, supervisión y despacho de combustible en 
 ```bash
 cd backend
 python -m uvicorn main:app --reload --port 8000
+```
 
-## 2. Frontend PWA (Móvil)
-code
-Bash
+### 2. Frontend PWA (Móvil)
+```bash
 cd frontend_pwa
 python -m http.server 5500
+```
 Acceso: http://localhost:5500
 
-## 3. Dashboard Admin (Streamlit)
-code
-Bash
+### 3. Dashboard Admin (Streamlit)
+```bash
 streamlit run dashboard_admin/app_visual.py
+```
