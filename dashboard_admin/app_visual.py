@@ -230,7 +230,7 @@ if modulo_activo == "📊 DASHBOARD":
 # 2. MÓDULO: 👤 SUPERVISORES
 # ===========================================================================
 elif modulo_activo == "👤 SUPERVISORES":
-    st.markdown("<h2 class='main-header-title'>GESTIÓN DE SUPERVISORES DE CAMPO</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 class='main-header-title'>GESTIÓN DE SUPERVISORES DE OPERACIONES</h2>", unsafe_allow_html=True)
 
     dialog_decorator = getattr(st, "dialog", getattr(st, "experimental_dialog", None))
 
@@ -247,17 +247,17 @@ elif modulo_activo == "👤 SUPERVISORES":
     # MODAL 1: REGISTRAR NUEVO SUPERVISOR
     # -----------------------------------------------------------------------
     if dialog_decorator:
-        @dialog_decorator("➕ Registrar Nuevo Supervisor")
+        @dialog_decorator("➕ AGREGAR SUPERVISOR")
         def modal_crear_supervisor():
             with st.form("form_modal_crear_sup", clear_on_submit=False):
-                new_name = st.text_input("Nombres y Apellidos Completos:", placeholder="Ej: CARLOS MENDOZA")
-                new_user = st.text_input("Usuario de Acceso PWA:", placeholder="ej: c.mendoza")
-                new_pass = st.text_input("Contraseña Inicial:", type="password", placeholder="••••••••")
+                new_name = st.text_input("Nombres y Apellidos:")
+                new_user = st.text_input("Usuario:")
+                new_pass = st.text_input("Contraseña:", type="password")
                 
                 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
                 c_save, c_cancel = st.columns(2)
                 with c_save:
-                    btn_crear = st.form_submit_button("GUARDAR EN NEON", type="primary", use_container_width=True)
+                    btn_crear = st.form_submit_button("CREAR", type="primary", use_container_width=True)
                 with c_cancel:
                     btn_cancel = st.form_submit_button("CANCELAR", use_container_width=True)
 
@@ -269,11 +269,10 @@ elif modulo_activo == "👤 SUPERVISORES":
                             "password": new_pass.strip()
                         })
                         if res.status_code == 200:
-                            st.session_state.notif_admin = ("success", f"Supervisor {new_name.strip().upper()} creado exitosamente.")
+                            st.session_state.notif_admin = ("success", f"Supervisor {new_name.strip().upper()} creado.")
                             st.cache_data.clear()
                             st.rerun()
                         else:
-                            # ✅ Mensaje limpio sin código SQL
                             err_msg = res.json().get('detail', 'No se pudo crear el supervisor.')
                             st.warning(f"⚠️ {err_msg}")
                     else:
@@ -285,19 +284,19 @@ elif modulo_activo == "👤 SUPERVISORES":
         # -------------------------------------------------------------------
         # MODAL 2: EDITAR SUPERVISOR
         # -------------------------------------------------------------------
-        @dialog_decorator("✏️ Editar Supervisor")
+        @dialog_decorator("✏️ EDITAR SUPERVISOR")
         def modal_editar_supervisor(sup):
             st.markdown(f"**Modificando:** <code style='color:#E8B828;'>{sup['id']}</code> — **{sup['name']}**", unsafe_allow_html=True)
             with st.form("form_modal_edit_sup"):
                 e_name = st.text_input("Nombres y Apellidos:", value=sup['name'])
-                e_user = st.text_input("Usuario PWA:", value=sup.get('username', ''))
-                e_pass = st.text_input("Resetear Contraseña (opcional):", type="password", placeholder="Dejar en blanco para mantener actual")
+                e_user = st.text_input("Usuario:", value=sup.get('username', ''))
+                e_pass = st.text_input("Resetear Contraseña (opcional):", type="password")
                 e_active = st.selectbox("Estado de Acceso:", ["ACTIVO", "INACTIVO"], index=0 if sup.get('is_active', True) else 1)
                 
                 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
                 b_save, b_cancel = st.columns(2)
                 with b_save:
-                    btn_guardar = st.form_submit_button("💾 GUARDAR CAMBIOS", type="primary", use_container_width=True)
+                    btn_guardar = st.form_submit_button("💾 GUARDAR", type="primary", use_container_width=True)
                 with b_cancel:
                     btn_cancel_e = st.form_submit_button("CANCELAR", use_container_width=True)
 
@@ -310,7 +309,7 @@ elif modulo_activo == "👤 SUPERVISORES":
                             "is_active": (e_active == "ACTIVO")
                         })
                         if res_up.status_code == 200:
-                            st.session_state.notif_admin = ("success", f"Supervisor {sup['id']} actualizado correctamente.")
+                            st.session_state.notif_admin = ("success", f"Supervisor {sup['id']} actualizado.")
                             st.cache_data.clear()
                             st.rerun()
                         else:
@@ -324,24 +323,23 @@ elif modulo_activo == "👤 SUPERVISORES":
         # -------------------------------------------------------------------
         # MODAL 3: CONFIRMAR ELIMINACIÓN
         # -------------------------------------------------------------------
-        @dialog_decorator("⚠️ Confirmar Baja de Supervisor")
+        @dialog_decorator("⚠️ ELIMINAR SUPERVISOR")
         def modal_confirmar_baja(sup):
             st.markdown(
                 f"""
                 <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 14px; margin-bottom: 14px;">
-                    <span style="color: #EF4444; font-weight: 800; font-size: 14px;">¿Está seguro de eliminar a este supervisor?</span><br>
+                    <span style="color: #EF4444; font-weight: 800; font-size: 17px;">¿Está seguro de eliminar a este supervisor?</span><br>
                     <span style="color: #FFFFFF; font-size: 13px;"><b>{sup['name']}</b> (<code style="color:#E8B828;">{sup['id']}</code>)</span><br>
-                    <span style="color: #94A3B8; font-size: 12px; margin-top: 4px; display: block;">Esta acción revocará su acceso a la PWA móvil de inmediato.</span>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
             c_del_yes, c_del_no = st.columns(2)
             with c_del_yes:
-                if st.button("🗑️ SÍ, ELIMINAR", key=f"conf_del_{sup['id']}", type="primary", use_container_width=True):
+                if st.button("🗑️ ELIMINAR", key=f"conf_del_{sup['id']}", type="primary", use_container_width=True):
                     res_del = requests.delete(f"{BACKEND_URL}/api/supervisors/{sup['id']}")
                     if res_del.status_code == 200:
-                        st.session_state.notif_admin = ("success", f"Supervisor {sup['id']} eliminado del sistema.")
+                        st.session_state.notif_admin = ("success", f"Supervisor {sup['id']} eliminado.")
                         st.cache_data.clear()
                         st.rerun()
                     else:
